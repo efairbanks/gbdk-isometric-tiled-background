@@ -5,12 +5,19 @@
 
 #include "data.h"
 
+#define MAP_SIZE_SHIFT 7
+#define MAP_SIZE (1<<MAP_SIZE_SHIFT)
+#define MAP_BITMASK (MAP_SIZE-1)
+#define MAP_DATA_SIZE ((MAP_SIZE*MAP_SIZE)/8)
+
+uint8_t map[MAP_DATA_SIZE] = {0};
+
 // gets a tile from the map using east-west, south-north coordinates
 // returns 0 if the tile is empty, 1 if the tile is solid
 uint8_t get_map(int8_t ew, int8_t sn, int8_t ewOffset, int8_t snOffset) {
     ew += ewOffset;
     sn += snOffset;
-    if(ew < 0 || sn < 0 || ew >= 32 || sn >= 32) return 1;
+    if(ew < 0 || sn < 0 || ew >= MAP_SIZE || sn >= MAP_SIZE) return 1;
     uint16_t byteIndex = (sn * 4) + (ew >> 3);
     uint8_t bitPosition = 7 - (ew & 0x07);
     return (map[byteIndex] >> bitPosition) & 0x01;
@@ -19,7 +26,7 @@ uint8_t get_map(int8_t ew, int8_t sn, int8_t ewOffset, int8_t snOffset) {
 // sets a tile in the map using east-west, south-north coordinates
 // value should be 0 or 1
 void set_map(int8_t ew, int8_t sn, uint8_t value) {
-    if(ew < 0 || sn < 0 || ew >= 32 || sn >= 32) return;
+    if(ew < 0 || sn < 0 || ew >= MAP_SIZE || sn >= MAP_SIZE) return;
     uint16_t byteIndex = (sn * 4) + (ew >> 3);
     uint8_t bitPosition = 7 - (ew & 0x07);
     uint8_t bitMask = (1 << bitPosition);
@@ -38,7 +45,7 @@ void set_map(int8_t ew, int8_t sn, uint8_t value) {
  */
 void generate_map(uint8_t num_rooms, uint8_t min_size, uint8_t max_size) {
     // Clear the map first
-    for(uint16_t i = 0; i < 4*32; i++) {
+    for(uint16_t i = 0; i < MAP_DATA_SIZE; i++) {
         map[i] = 0;
     }
     
@@ -58,8 +65,8 @@ void generate_map(uint8_t num_rooms, uint8_t min_size, uint8_t max_size) {
         uint8_t height = min_size + (rand() % (max_size - min_size + 1));
         
         // Room position (with some padding from edges)
-        int8_t x = 2 + (rand() % (28 - width));
-        int8_t y = 2 + (rand() % (28 - height));
+        int8_t x = 2 + (rand() % ((MAP_SIZE-2) - width));
+        int8_t y = 2 + (rand() % ((MAP_SIZE-2) - height));
         
         // Save room info
         room_x[r] = x;
@@ -99,8 +106,8 @@ void generate_map(uint8_t num_rooms, uint8_t min_size, uint8_t max_size) {
     
     // Optional: Add some random noise/decorations
     for (uint8_t i = 0; i < 30; i++) {
-        int8_t x = rand() % 32;
-        int8_t y = rand() % 32;
+        int8_t x = rand() % MAP_SIZE;
+        int8_t y = rand() % MAP_SIZE;
         
         // Don't overwrite existing tiles with a 50% chance
         if (!get_map(x, y, 0, 0) && (rand() % 2)) {
@@ -125,73 +132,73 @@ void generate_map(uint8_t num_rooms, uint8_t min_size, uint8_t max_size) {
     // draw north (UL)
     if(currentTile != northTile) {
         if(currentTile > northTile) {
-            set_bkg_tile_xy(x&0x1F, y&0x1F, 1);
-            set_bkg_tile_xy((x+1)&0x1F, y&0x1F, 2);
+            set_bkg_tile_xy(x&MAP_BITMASK, y&MAP_BITMASK, 1);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, y&MAP_BITMASK, 2);
         } else {
-            set_bkg_tile_xy(x&0x1F, y&0x1F, 1+8);
-            set_bkg_tile_xy((x+1)&0x1F, y&0x1F, 2+8);
+            set_bkg_tile_xy(x&MAP_BITMASK, y&MAP_BITMASK, 1+8);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, y&MAP_BITMASK, 2+8);
         }
     } else {
         if(currentTile) {
-            set_bkg_tile_xy(x&0x1F, y&0x1F, 0);
-            set_bkg_tile_xy((x+1)&0x1F, y&0x1F, 0);
+            set_bkg_tile_xy(x&MAP_BITMASK, y&MAP_BITMASK, 0);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, y&MAP_BITMASK, 0);
         } else {
-            set_bkg_tile_xy(x&0x1F, y&0x1F, 17);
-            set_bkg_tile_xy((x+1)&0x1F, y&0x1F, 17);
+            set_bkg_tile_xy(x&MAP_BITMASK, y&MAP_BITMASK, 17);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, y&MAP_BITMASK, 17);
         }
     }
     // draw east (UR)
     if(currentTile != eastTile) {
         if(currentTile > eastTile) {
-            set_bkg_tile_xy((x+2)&0x1F, y&0x1F, 3);
-            set_bkg_tile_xy((x+3)&0x1F, y&0x1F, 4);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, y&MAP_BITMASK, 3);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, y&MAP_BITMASK, 4);
         } else {
-            set_bkg_tile_xy((x+2)&0x1F, y&0x1F, 3+8);
-            set_bkg_tile_xy((x+3)&0x1F, y&0x1F, 4+8);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, y&MAP_BITMASK, 3+8);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, y&MAP_BITMASK, 4+8);
         }
     } else {
         if(currentTile) {
-            set_bkg_tile_xy((x+2)&0x1F, y&0x1F, 0);
-            set_bkg_tile_xy((x+3)&0x1F, y&0x1F, 0);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, y&MAP_BITMASK, 0);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, y&MAP_BITMASK, 0);
         } else {
-            set_bkg_tile_xy((x+2)&0x1F, y&0x1F, 17);
-            set_bkg_tile_xy((x+3)&0x1F, y&0x1F, 17);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, y&MAP_BITMASK, 17);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, y&MAP_BITMASK, 17);
         }
     }
     // draw west (LR)
     if(currentTile != westTile) {
         if(currentTile > westTile) {
-            set_bkg_tile_xy((x)&0x1F, (y+1)&0x1F, 5);
-            set_bkg_tile_xy((x+1)&0x1F, (y+1)&0x1F, 6);
+            set_bkg_tile_xy((x)&MAP_BITMASK, (y+1)&MAP_BITMASK, 5);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, (y+1)&MAP_BITMASK, 6);
         } else {
-            set_bkg_tile_xy((x)&0x1F, (y+1)&0x1F, 5+8);
-            set_bkg_tile_xy((x+1)&0x1F, (y+1)&0x1F, 6+8);
+            set_bkg_tile_xy((x)&MAP_BITMASK, (y+1)&MAP_BITMASK, 5+8);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, (y+1)&MAP_BITMASK, 6+8);
         }
     } else {
         if(currentTile) {
-            set_bkg_tile_xy((x)&0x1F, (y+1)&0x1F, 0);
-            set_bkg_tile_xy((x+1)&0x1F, (y+1)&0x1F, 0);
+            set_bkg_tile_xy((x)&MAP_BITMASK, (y+1)&MAP_BITMASK, 0);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, (y+1)&MAP_BITMASK, 0);
         } else {
-            set_bkg_tile_xy((x)&0x1F, (y+1)&0x1F, 17);
-            set_bkg_tile_xy((x+1)&0x1F, (y+1)&0x1F, 17);
+            set_bkg_tile_xy((x)&MAP_BITMASK, (y+1)&MAP_BITMASK, 17);
+            set_bkg_tile_xy((x+1)&MAP_BITMASK, (y+1)&MAP_BITMASK, 17);
         }
     }
     // draw south (LL)
     if(currentTile != southTile) {
         if(currentTile > southTile) {
-            set_bkg_tile_xy((x+2)&0x1F, (y+1)&0x1F, 7);
-            set_bkg_tile_xy((x+3)&0x1F, (y+1)&0x1F, 8);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, (y+1)&MAP_BITMASK, 7);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, (y+1)&MAP_BITMASK, 8);
         } else {
-            set_bkg_tile_xy((x+2)&0x1F, (y+1)&0x1F, 7+8);
-            set_bkg_tile_xy((x+3)&0x1F, (y+1)&0x1F, 8+8);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, (y+1)&MAP_BITMASK, 7+8);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, (y+1)&MAP_BITMASK, 8+8);
         }
     } else {
         if(currentTile) {
-            set_bkg_tile_xy((x+2)&0x1F, (y+1)&0x1F, 0);
-            set_bkg_tile_xy((x+3)&0x1F, (y+1)&0x1F, 0);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, (y+1)&MAP_BITMASK, 0);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, (y+1)&MAP_BITMASK, 0);
         } else {
-            set_bkg_tile_xy((x+2)&0x1F, (y+1)&0x1F, 17);
-            set_bkg_tile_xy((x+3)&0x1F, (y+1)&0x1F, 17);
+            set_bkg_tile_xy((x+2)&MAP_BITMASK, (y+1)&MAP_BITMASK, 17);
+            set_bkg_tile_xy((x+3)&MAP_BITMASK, (y+1)&MAP_BITMASK, 17);
         }
     }
 }
@@ -256,10 +263,6 @@ void main(void)
         }
     }
 
-    // initrand(66);
-    // for(int i=0; i<4*32; i++) map[i] = rand();
-    // for(int i=0; i<4*32; i++) map[i] = rand();
-
     generate_map(5, 2, 4);
 
     vsync();
@@ -275,9 +278,9 @@ void main(void)
             // Use a different seed each time for variety
             initrand(DIV_REG);
             // Generate new map with slightly different parameters each time
-            uint8_t num_rooms = 3 + (rand() % 5); // 3-7 rooms
-            uint8_t min_size = 2 + (rand() % 2);   // 2-3 min size
-            uint8_t max_size = 4 + (rand() % 3);   // 4-6 max size
+            uint8_t num_rooms = 5 + (rand() % 10); // 5-15 rooms
+            uint8_t min_size = 2 + (rand() % 3);   // 2-4 min size
+            uint8_t max_size = 4 + (rand() % 4);   // 4-7 max size
             generate_map(num_rooms, min_size, max_size);
             vsync();
             draw_tiles(TILE_UPDATE_ALL, ewCamPos, snCamPos);
@@ -288,26 +291,18 @@ void main(void)
         if(key & J_LEFT) {
             ewCamPos += -1;
             tileUpdateMask |= TILE_UPDATE_LEFT | TILE_UPDATE_DOWN;
-            // bgTileXOffset = (bgTileXOffset-4)&0x1F;
-            // bgTileYOffset = (bgTileYOffset+2)&0x1F;
         }
         if(key & J_RIGHT) {
             ewCamPos += 1;
             tileUpdateMask |= TILE_UPDATE_RIGHT | TILE_UPDATE_UP;
-            // bgTileXOffset = (bgTileXOffset+4)&0x1F;
-            // bgTileYOffset = (bgTileYOffset-2)&0x1F;
         }
         if(key & J_UP) {
             snCamPos += -1;
             tileUpdateMask |= TILE_UPDATE_LEFT | TILE_UPDATE_UP;
-            // bgTileXOffset = (bgTileXOffset-4)&0x1F;
-            // bgTileYOffset = (bgTileYOffset-2)&0x1F;
         }
         if(key & J_DOWN) {
             snCamPos += 1;
             tileUpdateMask |= TILE_UPDATE_RIGHT | TILE_UPDATE_DOWN;
-            // bgTileXOffset = (bgTileXOffset+4)&0x1F;
-            // bgTileYOffset = (bgTileYOffset+2)&0x1F;
         }
 
         vsync();
