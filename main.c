@@ -205,11 +205,13 @@ enum {
     TILE_UPDATE_ALL     = 16
 } _TILE_UPDATE_MASK;
 
-void draw_tiles(int8_t tileUpdateMask, int8_t ewOffset, int8_t snOffset, int8_t bgXOffset, int8_t bgYOffset) {
+void draw_tiles(int8_t tileUpdateMask, int8_t ewOffset, int8_t snOffset) {
+    int8_t bgXOffset = (ewOffset<<1) + (snOffset<<1);
+    int8_t bgYOffset = -(ewOffset) + (snOffset);
     if(tileUpdateMask == TILE_UPDATE_NONE) return;
     if(tileUpdateMask == TILE_UPDATE_ALL) {
-        for(int y=0; y<18; y+=2) {
-            for(int x=0; x<20; x+=4) {
+        for(int y=0; y<20; y+=2) {
+            for(int x=0; x<22; x+=4) {
                 draw_tile(x, y, ewOffset, snOffset, bgXOffset, bgYOffset);
             }
         }
@@ -235,6 +237,7 @@ void draw_tiles(int8_t tileUpdateMask, int8_t ewOffset, int8_t snOffset, int8_t 
             }
         }
     }
+    move_bkg(bgXOffset*8, bgYOffset*8);
 }
 
 void main(void)
@@ -260,7 +263,7 @@ void main(void)
     generate_map(5, 2, 4);
 
     vsync();
-    draw_tiles(TILE_UPDATE_ALL, 0, 0, 0, 0);
+    draw_tiles(TILE_UPDATE_ALL, 0, 0);
 
     // Loop forever
     while(1) {
@@ -277,7 +280,7 @@ void main(void)
             uint8_t max_size = 4 + (rand() % 3);   // 4-6 max size
             generate_map(num_rooms, min_size, max_size);
             vsync();
-            draw_tiles(TILE_UPDATE_ALL, 0, 0, 0, 0);
+            draw_tiles(TILE_UPDATE_ALL, ewCamPos, snCamPos);
         }
 
         // Movement controls
@@ -309,13 +312,7 @@ void main(void)
 
         vsync();
 
-
-        bgTileXOffset = (ewCamPos<<1) + (snCamPos<<1);
-        bgTileYOffset = -(ewCamPos) + (snCamPos);
-        draw_tiles(tileUpdateMask, ewCamPos, snCamPos, bgTileXOffset, bgTileYOffset);
-        move_bkg(bgTileXOffset*8, bgTileYOffset*8);
-
-        // set_bkg_tile_xy(0, 0, get_map(0,0)+17);
+        draw_tiles(tileUpdateMask, ewCamPos, snCamPos);
 
         SHOW_BKG;
     }
