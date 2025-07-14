@@ -10,7 +10,7 @@
 uint8_t get_map(int8_t ew, int8_t sn, int8_t ewOffset, int8_t snOffset) {
     ew += ewOffset;
     sn += snOffset;
-    if(ew < 0 || sn < 0 || ew >= 32 || sn >= 32) return 0;
+    if(ew < 0 || sn < 0 || ew >= 32 || sn >= 32) return 1;
     uint16_t byteIndex = (sn * 4) + (ew >> 3);
     uint8_t bitPosition = 7 - (ew & 0x07);
     return (map[byteIndex] >> bitPosition) & 0x01;
