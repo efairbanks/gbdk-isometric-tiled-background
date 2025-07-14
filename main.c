@@ -276,6 +276,8 @@ void main(void)
             uint8_t min_size = 2 + (rand() % 2);   // 2-3 min size
             uint8_t max_size = 4 + (rand() % 3);   // 4-6 max size
             generate_map(num_rooms, min_size, max_size);
+            vsync();
+            draw_tiles(TILE_UPDATE_ALL, 0, 0, 0, 0);
         }
 
         // Movement controls
